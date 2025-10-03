@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Post a Job — Student Connect</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="header">
+    <a href="index.html">Home</a>
+    <a href="jobs.html">Jobs</a>
+    <a href="dashboard.html">Dashboard</a>
+    <button onclick="logout()">Logout</button>
+  </div>
+  <div class="container">
+    <h2>Post a Job</h2>
+    <form id="postJobForm">
+      <input class="input" type="text" id="title" placeholder="Job Title" required>
+      <textarea class="input" id="description" placeholder="Job Description" required></textarea>
+      <button class="btn" type="submit">Post</button>
+    </form>
+    <p id="msg"></p>
+    <button class="btn" onclick="window.location='jobs.html'">Back to Jobs</button>
+  </div>
+  <script type="module">
+    const API = "http://localhost:5000";
+    function logout() {
+      localStorage.removeItem("token");
+      document.getElementById("msg").innerText = "Logged out.";
+    }
+    document.getElementById('postJobForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const title = document.getElementById('title').value;
+      const description = document.getElementById('description').value;
+      const token = localStorage.getItem("token");
+      const res = await fetch(API + "/jobs", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + token
+        },
+        body: JSON.stringify({ title, description })
+      });
+      const data = await res.json();
+      document.getElementById("msg").textContent = data.message || data.error;
+      document.getElementById("msg").className = data.message ? "success" : "error";
+    });
+    window.logout = logout;
+  </script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Job Board — Student Connect</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="header">
+    <a href="index.html">Home</a>
+    <a href="dashboard.html">Dashboard</a>
+    <button onclick="logout()">Logout</button>
+  </div>
+  <div class="container">
+    <h2>Available Jobs</h2>
+    <ul id="jobList"></ul>
+    <button class="btn" onclick="window.location='post-job.html'">Post a Job (Employers)</button>
+    <p id="msg"></p>
+  </div>
+  <script type="module">
+    const API = "http://localhost:5000";
+    function logout() {
+      localStorage.removeItem("token");
+      document.getElementById("msg").innerText = "Logged out.";
+    }
+    async function loadJobs() {
+      const res = await fetch(API + "/jobs");
+      const jobs = await res.json();
+      const list = document.getElementById('jobList');
+      list.innerHTML = '';
+      jobs.forEach(job => {
+        const li = document.createElement('li');
+        li.innerHTML = `<b>${job.title}</b> <br>
+          <span class="small">${job.description}</span>
+          <button class="btn" style="margin-top:8px;" onclick="window.location='job-detail.html?id=${job.id}'">View & Apply</button>`;
+        list.appendChild(li);
+      });
+    }
+    loadJobs();
+    window.logout = logout;
+  </script>
+</body>
+</html>
