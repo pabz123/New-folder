@@ -1,11 +1,10 @@
-import { apiFetch } from "./api.js";
+import { api } from './api.js';
 
 export async function applyToJob(jobId, resumeFile) {
   const formData = new FormData();
-  formData.append("jobId", jobId);
   formData.append("resume", resumeFile);
   const token = localStorage.getItem("token");
-  return fetch("http://localhost:5000/applications/apply", {
+  return fetch(`http://localhost:5000/applications/${jobId}`, { // Fix endpoint
     method: "POST",
     headers: { Authorization: "Bearer " + token },
     body: formData,

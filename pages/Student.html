@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Profile | UniConnect</title>
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/profile.css">
+</head>
+<body>
+  <header class="header">
+    <div class="header-container">
+      <a href="/" class="logo">
+        <img src="../assets/images/logo.svg" alt="UniConnect">
+        UniConnect
+      </a>
+      <nav class="nav-links">
+        <a href="/jobs.html">Find Jobs</a>
+        <a href="/my-applications.html">My Applications</a>
+        <button class="btn btn-primary" onclick="auth.logout()">Logout</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="container">
+      <div class="profile-header">
+        <h1>My Profile</h1>
+        <button class="btn btn-primary" onclick="saveProfile()">Save Changes</button>
+      </div>
+
+      <div class="profile-grid">
+        <div class="card">
+          <h3>Personal Information</h3>
+          <form id="personalInfoForm" class="form">
+            <div class="form-group">
+              <label class="label">Full Name</label>
+              <input type="text" class="input" id="fullName" required>
+            </div>
+            <div class="form-group">
+              <label class="label">Email</label>
+              <input type="email" class="input" id="email" required>
+            </div>
+            <div class="form-group">
+              <label class="label">Phone</label>
+              <input type="tel" class="input" id="phone">
+            </div>
+            <div class="form-group">
+              <label class="label">Location</label>
+              <input type="text" class="input" id="location">
+            </div>
+          </form>
+        </div>
+
+        <div class="card">
+          <h3>Education</h3>
+          <form id="educationForm" class="form">
+            <div class="form-group">
+              <label class="label">University</label>
+              <input type="text" class="input" id="university" required>
+            </div>
+            <div class="form-group">
+              <label class="label">Degree</label>
+              <input type="text" class="input" id="degree" required>
+            </div>
+            <div class="form-group">
+              <label class="label">Field of Study</label>
+              <input type="text" class="input" id="fieldOfStudy" required>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="label">Start Date</label>
+                <input type="month" class="input" id="eduStartDate" required>
+              </div>
+              <div class="form-group">
+                <label class="label">End Date</label>
+                <input type="month" class="input" id="eduEndDate">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="label">GPA (Optional)</label>
+              <input type="number" class="input" id="gpa" step="0.01" min="0" max="4">
+            </div>
+          </form>
+        </div>
+
+        <div class="card">
+          <h3>Skills</h3>
+          <div class="skills-input">
+            <input type="text" class="input" id="skillInput" placeholder="Add a skill">
+            <button class="btn btn-secondary" onclick="addSkill()">Add</button>
+          </div>
+          <div class="skills-list" id="skillsList">
+            <!-- Skills will be added here dynamically -->
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Resume</h3>
+          <div class="resume-upload">
+            <input type="file" id="resumeFile" accept=".pdf,.doc,.docx" style="display: none">
+            <button class="btn btn-primary" onclick="document.getElementById('resumeFile').click()">
+              Upload Resume
+            </button>
+            <p class="small" id="resumeStatus">Accepted formats: PDF, DOC, DOCX</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { auth } from '../js/auth.js';
+    import { api } from '../js/api.js';
+
+    let skills = [];
+
+    // Load profile data
+    async function loadProfile() {
+      try {
+        const profile = await api.getProfile();
+        
+        // Fill personal info
+        document.getElementById('fullName').value = profile.fullName || '';
+        document.getElementById('email').value = profile.email || '';
+        document.getElementById('phone').value = profile.phone || '';
+        document.getElementById('location').value = profile.location || '';
+        
+        // Fill education
+        document.getElementById('university').value = profile.education?.university || '';
+        document.getElementById('degree').value = profile.education?.degree || '';
+        document.getElementById('fieldOfStudy').value = profile.education?.fieldOfStudy || '';
+        document.getElementById('eduStartDate').value = profile.education?.startDate || '';
+        document.getElementById('eduEndDate').value = profile.education?.endDate || '';
+        document.getElementById('gpa').value = profile.education?.gpa || '';
+        
+        // Load skills
+        skills = profile.skills || [];
+        renderSkills();
+        
+        // Show resume status
+        if (profile.resume) {
+          document.getElementById('resumeStatus').textContent = 'Current resume: ' + profile.resume;
+        }
+      } catch (error) {
+        console.error('Error loading profile:', error);
+        showError('Failed to load profile');
+      }
+    }
+
+    // Save profile changes
+    async function saveProfile() {
+      try {
+        const profileData = {
+          personalInfo: {
+            fullName: document.getElementById('fullName').value,
+            email: document.getElementById('email').value,
+            phone: document.getElementById('phone').value,
+            location: document.getElementById('location').value
+          },
+          education: {
+            university: document.getElementById('university').value,
+            degree: document.getElementById('degree').value,
+            fieldOfStudy: document.getElementById('fieldOfStudy').value,
+            startDate: document.getElementById('eduStartDate').value,
+            endDate: document.getElementById('eduEndDate').value,
+            gpa: document.getElementById('gpa').value
+          },
+          skills: skills
+        };
+
+        await api.updateProfile(profileData);
+        showSuccess('Profile updated successfully');
+      } catch (error) {
+        console.error('Error saving profile:', error);
+        showError('Failed to save profile');
+      }
+    }
+
+    // Skills management
+    function addSkill() {
+      const input = document.getElementById('skillInput');
+      const skill = input.value.trim();
+      
+      if (skill && !skills.includes(skill)) {
+        skills.push(skill);
+        input.value = '';
+        renderSkills();
+      }
+    }
+
+    function removeSkill(skill) {
+      skills = skills.filter(s => s !== skill);
+      renderSkills();
+    }
+
+    function renderSkills() {
+      const list = document.getElementById('skillsList');
+      list.innerHTML = skills.map(skill => `
+        <div class="skill-tag">
+          ${skill}
+          <button onclick="removeSkill('${skill}')" class="skill-remove">&times;</button>
+        </div>
+      `).join('');
+    }
+
+    // Resume upload
+    document.getElementById('resumeFile').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        try {
+          await api.uploadResume(file);
+          document.getElementById('resumeStatus').textContent = 'Resume uploaded: ' + file.name;
+          showSuccess('Resume uploaded successfully');
+        } catch (error) {
+          console.error('Error uploading resume:', error);
+          showError('Failed to upload resume');
+        }
+      }
+    });
+
+    // Utility functions
+    function showSuccess(message) {
+      // Implement toast or notification
+      alert(message);
+    }
+
+    function showError(message) {
+      // Implement toast or notification
+      alert(message);
+    }
+
+    // Initialize
+    window.addSkill = addSkill;
+    window.removeSkill = removeSkill;
+    window.saveProfile = saveProfile;
+    
+    loadProfile();
+  </script>
+</body>
+</html>

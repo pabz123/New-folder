@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Job Details | UniConnect</title>
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/job-detail.css">
+</head>
+<body>
+  <header class="header">
+    <div class="header-container">
+      <a href="/" class="logo">UniConnect</a>
+      <nav class="nav-links">
+        <a href="/jobs.html">All Jobs</a>
+        <a href="/profile.html">My Profile</a>
+        <button class="btn btn-outline" onclick="auth.logout()">Logout</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="job-detail-container">
+      <div class="job-detail-header">
+        <div class="back-button">
+          <a href="/jobs.html" class="btn btn-outline">← Back to Jobs</a>
+        </div>
+        <div id="jobHeader">
+          <!-- Job header content will be loaded here -->
+        </div>
+      </div>
+
+      <div class="job-detail-grid">
+        <div class="job-detail-main">
+          <div id="jobContent">
+            <!-- Job content will be loaded here -->
+          </div>
+        </div>
+
+        <div class="job-detail-sidebar">
+          <div class="application-card">
+            <h3>Apply Now</h3>
+            <form id="applicationForm">
+              <div class="form-group">
+                <label>Cover Letter (Optional)</label>
+                <textarea class="input" id="coverLetter" rows="4"></textarea>
+              </div>
+              <div class="form-group">
+                <label>Resume</label>
+                <input type="file" id="resumeFile" accept=".pdf,.doc,.docx" required>
+              </div>
+              <button type="submit" class="btn btn-primary btn-block">Submit Application</button>
+            </form>
+          </div>
+
+          <div class="company-card">
+            <h3>About the Company</h3>
+            <div id="companyInfo">
+              <!-- Company info will be loaded here -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { auth } from '../js/auth.js';
+    import { api } from '../js/api.js';
+
+    const jobId = new URLSearchParams(window.location.search).get('id');
+    
+    async function loadJobDetails() {
+      try {
+        const job = await api.getJob(jobId);
+        renderJobDetails(job);
+      } catch (error) {
+        console.error('Error loading job details:', error);
+        showError('Failed to load job details');
+      }
+    }
+
+    function renderJobDetails(job) {
+      // Render job header
+      document.getElementById('jobHeader').innerHTML = `
+        <h1>${job.title}</h1>
+        <div class="job-meta">
+          <span class="company-name">${job.company}</span>
+          <span class="location">${job.location}</span>
+          <span class="job-type">${job.type}</span>
+        </div>
+      `;
+
+      // Render job content
+      document.getElementById('jobContent').innerHTML = `
+        <div class="job-section">
+          <h2>Job Description</h2>
+          <p>${job.description}</p>
+        </div>
+        
+        <div class="job-section">
+          <h2>Requirements</h2>
+          <ul>
+            ${job.requirements.map(req => `<li>${req}</li>`).join('')}
+          </ul>
+        </div>
+
+        <div class="job-section">
+          <h2>Responsibilities</h2>
+          <ul>
+            ${job.responsibilities.map(resp => `<li>${resp}</li>`).join('')}
+          </ul>
+        </div>
+      `;
+
+      // Render company info
+      document.getElementById('companyInfo').innerHTML = `
+        <div class="company-logo">
+          <img src="${job.company_logo}" alt="${job.company}">
+        </div>
+        <p>${job.company_description}</p>
+        <div class="company-meta">
+          <span>Industry: ${job.industry}</span>
+          <span>Website: <a href="${job.company_website}" target="_blank">Visit</a></span>
+        </div>
+      `;
+    }
+
+    // Handle application submission
+    document.getElementById('applicationForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const formData = new FormData();
+      formData.append('jobId', jobId);
+      formData.append('coverLetter', document.getElementById('coverLetter').value);
+      formData.append('resume', document.getElementById('resumeFile').files[0]);
+
+      try {
+        const token = auth.getToken();
+        const res = await fetch(API + `/applications/${jobId}`, {
+          method: "POST",
+          headers: { Authorization: "Bearer " + token },
+          body: formData
+        });
+        
+        if (!res.ok) throw new Error('Network response was not ok');
+
+        showSuccess('Application submitted successfully!');
+        setTimeout(() => window.location.href = '/applications.html', 1500);
+      } catch (error) {
+        console.error('Error submitting application:', error);
+        showError('Failed to submit application');
+      }
+    });
+
+    function showSuccess(message) {
+      // Implement success notification
+      alert(message);
+    }
+
+    function showError(message) {
+      // Implement error notification
+      alert(message);
+    }
+
+    // Initialize page
+    loadJobDetails();
+  </script>
+</body>
+</html>

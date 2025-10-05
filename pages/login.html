@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Login - UniConnect</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/layout.css">
+    <link rel="stylesheet" href="/css/form.css">
+</head>
+<body class="auth-page">
+    <nav class="navbar">
+        <div class="nav-brand">UniConnect</div>
+        <div class="nav-links">
+            <a href="/index.html">Home</a>
+            <a href="/about.html">About</a>
+            <a href="/contact.html">Contact</a>
+            <a href="/login.html" class="active">Login</a>
+            <a href="/register.html">Register</a>
+        </div>
+    </nav>
+
+    <main class="auth-container">
+        <div class="auth-box">
+            <h1>Welcome Back</h1>
+            <p class="auth-subtitle">Login to access your account</p>
+            
+            <form id="loginForm" class="auth-form">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Login</button>
+                <p id="msg" class="message"></p>
+            </form>
+            
+            <p class="auth-footer">
+                Don't have an account? <a href="/register.html">Register here</a>
+            </p>
+        </div>
+    </main>
+
+    <script type="module">
+        const API_URL = 'http://localhost:5000';
+        
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const msgEl = document.getElementById('msg');
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            
+            try {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Logging in...';
+                msgEl.textContent = '';
+                
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: document.getElementById('email').value,
+                        password: document.getElementById('password').value
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Login failed');
+                }
+
+                msgEl.className = 'message success';
+                msgEl.textContent = '✅ Login successful!';
+                
+                // Store token and user role
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('userRole', data.user.role);
+                
+                // Redirect based on role
+                setTimeout(() => {
+                    if (data.user.role === 'student') {
+                        window.location.href = '/Student.html';
+                    } else {
+                        window.location.href = '/Employer.html';
+                    }
+                }, 1000);
+                
+            } catch (err) {
+                msgEl.className = 'message error';
+                msgEl.textContent = '❌ ' + (err.message || 'Something went wrong');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Login';
+            }
+        });
+    </script>
+</body>
+</html>

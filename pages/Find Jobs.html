@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Find Jobs | UniConnect</title>
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/jobs.css">
+</head>
+<body>
+  <header class="header">
+    <div class="header-container">
+      <a href="/" class="logo">UniConnect</a>
+      <nav class="nav-links">
+        <a href="/profile.html">My Profile</a>
+        <a href="/my-applications.html">My Applications</a>
+        <button class="btn btn-outline" onclick="auth.logout()">Logout</button>
+      </nav>
+    </div>
+  </header>
+
+  <div class="jobs-container">
+    <aside class="filters-sidebar">
+      <div class="filters-section">
+        <h3>Filter Jobs</h3>
+        <form id="filterForm">
+          <div class="form-group">
+            <label>Job Type</label>
+            <select class="input" id="jobType">
+              <option value="">All Types</option>
+              <option value="full-time">Full Time</option>
+              <option value="part-time">Part Time</option>
+              <option value="internship">Internship</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Location</label>
+            <select class="input" id="location">
+              <option value="">All Locations</option>
+              <option value="kampala">Kampala</option>
+              <option value="remote">Remote</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Industry</label>
+            <select class="input" id="industry">
+              <option value="">All Industries</option>
+              <option value="technology">Technology</option>
+              <option value="finance">Finance</option>
+              <option value="healthcare">Healthcare</option>
+              <option value="education">Education</option>
+            </select>
+          </div>
+
+          <button type="submit" class="btn btn-primary">Apply Filters</button>
+        </form>
+      </div>
+    </aside>
+
+    <main class="jobs-main">
+      <div class="jobs-header">
+        <h1>Available Jobs</h1>
+        <div class="search-bar">
+          <input type="text" id="searchInput" class="input" placeholder="Search jobs...">
+          <button class="btn btn-primary" onclick="searchJobs()">Search</button>
+        </div>
+      </div>
+
+      <div id="jobsList" class="jobs-grid">
+        <!-- Jobs will be loaded here -->
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { auth } from '../js/auth.js';
+    import { jobManager } from '../js/jobs.js';
+
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', () => {
+      // Load initial jobs
+      jobManager.loadJobs();
+
+      // Set up filter form
+      document.getElementById('filterForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const filters = {
+          type: document.getElementById('jobType').value,
+          location: document.getElementById('location').value,
+          industry: document.getElementById('industry').value
+        };
+        jobManager.loadJobs(filters);
+      });
+
+      // Set up search
+      window.searchJobs = () => {
+        const searchTerm = document.getElementById('searchInput').value;
+        jobManager.loadJobs({ search: searchTerm });
+      };
+
+      // Set up job view
+      window.viewJob = (jobId) => {
+        window.location.href = `/job-detail.html?id=${jobId}`;
+      };
+    });
+  </script>
+</body>
+</html>

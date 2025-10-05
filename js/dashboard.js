@@ -1,4 +1,4 @@
-import { apiFetch } from "./api.js";
+import { api } from './api.js';
 
 export async function getMyApplications() {
   return apiFetch("/applications/my");

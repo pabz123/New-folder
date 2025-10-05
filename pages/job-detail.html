@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Job Details — Student Connect</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/landing.css">
+  <link rel="stylesheet" href="css/jobs.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="header">
+    <a href="index.html">Home</a>
+    <a href="jobs.html">Jobs</a>
+    <a href="Student.html">Dashboard</a>
+    <button onclick="logout()">Logout</button>
+  </div>
+  <div class="container">
+    <h2 id="jobTitle">Job Details</h2>
+    <div id="jobDesc" class="small"></div>
+    <form id="applyForm" style="margin-top:24px;">
+      <input class="input" type="file" id="resume" required>
+      <button class="btn" type="submit">Apply</button>
+    </form>
+    <p id="msg"></p>
+    <button class="btn" onclick="window.location='jobs.html'">Back to Jobs</button>
+  </div>
+  <script type="module">
+  const API = "http://localhost:5000";
+  function logout() {
+    localStorage.removeItem("token");
+    document.getElementById("msg").innerText = "Logged out.";
+  }
+  const params = new URLSearchParams(window.location.search);
+  const jobId = params.get('id');
+  async function loadJob() {
+    const res = await fetch(API + `/jobs/${jobId}`);
+    const job = await res.json();
+    document.getElementById('jobTitle').textContent = job.title;
+    document.getElementById('jobDesc').textContent = job.description;
+  }
+  document.getElementById('applyForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const resume = document.getElementById('resume').files[0];
+    const formData = new FormData();
+    formData.append('resume', resume);
+    const token = localStorage.getItem("token");
+    const res = await fetch(API + `/applications/${jobId}`, {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token },
+      body: formData
+    });
+    const data = await res.json();
+    document.getElementById("msg").textContent = data.message || data.error;
+    document.getElementById("msg").className = data.message ? "success" : "error";
+  });
+  loadJob();
+  window.logout = logout;
+  </script>
+</body>
+</html>

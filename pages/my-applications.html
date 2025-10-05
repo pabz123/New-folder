@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Applications | UniConnect</title>
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/applications.css">
+</head>
+<body>
+  <header class="header">
+    <div class="header-container">
+      <a href="/" class="logo">UniConnect</a>
+      <nav class="nav-links">
+        <a href="/Find Jobs.html">Find Jobs</a>
+        <a href="/profile.html">My Profile</a>
+        <button class="btn btn-outline" onclick="auth.logout()">Logout</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="container">
+      <div class="page-header">
+        <h1>My Applications</h1>
+        <div class="filters">
+          <select id="statusFilter" class="input">
+            <option value="">All Statuses</option>
+            <option value="pending">Pending</option>
+            <option value="reviewed">Reviewed</option>
+            <option value="interviewed">Interviewed</option>
+            <option value="accepted">Accepted</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="applications-grid" id="applicationsList">
+        <!-- Applications will be loaded here -->
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { auth } from '../js/auth.js';
+    import { api } from '../js/api.js';
+
+    class ApplicationsTracker {
+      constructor() {
+        this.loadApplications();
+        this.setupFilters();
+      }
+
+      async loadApplications(filters = {}) {
+        try {
+          const applications = await api.getMyApplications(filters);
+          this.renderApplications(applications);
+        } catch (error) {
+          console.error('Error loading applications:', error);
+          this.showError('Failed to load applications');
+        }
+      }
+
+      renderApplications(applications) {
+        const container = document.getElementById('applicationsList');
+        
+        if (applications.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <h3>No applications yet</h3>
+              <p>Start applying to jobs to track your applications here.</p>
+              <a href="/jobs.html" class="btn btn-primary">Browse Jobs</a>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = applications.map(app => `
+          <div class="application-card">
+            <div class="job-info">
+              <h3>${app.job.title}</h3>
+              <span class="company">${app.job.company}</span>
+            </div>
+            
+            <div class="application-meta">
+              <div class="status ${app.status}">
+                ${this.formatStatus(app.status)}
+              </div>
+              <span class="date">Applied on ${this.formatDate(app.created_at)}</span>
+            </div>
+            
+            <div class="application-timeline">
+              ${this.renderTimeline(app)}
+            </div>
+            
+            <div class="application-actions">
+              <a href="/job-detail.html?id=${app.job.id}" class="btn btn-outline btn-sm">View Job</a>
+              ${app.status === 'accepted' ? `
+                <button class="btn btn-success btn-sm" onclick="acceptOffer(${app.id})">Accept Offer</button>
+              ` : ''}
+            </div>
+          </div>
+        `).join('');
+      }
+
+      formatStatus(status) {
+        const statusMap = {
+          pending: 'Pending Review',
+          reviewed: 'Application Reviewed',
+          interviewed: 'Interview Scheduled',
+          accepted: 'Offer Received',
+          rejected: 'Not Selected'
+        };
+        return statusMap[status] || status;
+      }
+
+      renderTimeline(application) {
+        const steps = [
+          { key: 'applied', label: 'Applied', date: application.created_at },
+          { key: 'reviewed', label: 'Reviewed', date: application.reviewed_at },
+          { key: 'interviewed', label: 'Interviewed', date: application.interviewed_at },
+          { key: 'accepted', label: 'Decision', date: application.updated_at }
+        ];
+
+        return `
+          <div class="timeline">
+            ${steps.map((step, index) => `
+              <div class="timeline-step ${application.status === step.key ? 'active' : ''}">
+                <div class="step-indicator"></div>
+                <div class="step-content">
+                  <span class="step-label">${step.label}</span>
+                  ${step.date ? `<span class="step-date">${this.formatDate(step.date)}</span>` : ''}
+                </div>
+              </div>
+              ${index < steps.length - 1 ? '<div class="timeline-line"></div>' : ''}
+            `).join('')}
+          </div>
+        `;
+      }
+
+      setupFilters() {
+        document.getElementById('statusFilter').addEventListener('change', (e) => {
+          this.loadApplications({ status: e.target.value });
+        });
+      }
+
+      formatDate(date) {
+        return new Date(date).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric'
+        });
+      }
+
+      showError(message) {
+        // Implement error notification
+        alert(message);
+      }
+    }
+
+    // Initialize applications tracker
+    new ApplicationsTracker();
+
+    // Handle offer acceptance
+    window.acceptOffer = async (applicationId) => {
+      try {
+        await api.acceptOffer(applicationId);
+        window.location.reload();
+      } catch (error) {
+        console.error('Error accepting offer:', error);
+        alert('Failed to accept offer');
+      }
+    };
+  </script>
+</body>
+</html>

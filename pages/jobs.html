@@ -4,15 +4,20 @@
   <meta charset="UTF-8" />
   <title>Job Board — Student Connect</title>
   <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/landing.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="stylesheet" href="css/dashboard.css">
 </head>
 <body>
   <div class="header">
     <a href="index.html">Home</a>
-    <a href="dashboard.html">Dashboard</a>
+    <a href="Student.html">Dashboard</a>
     <button onclick="logout()">Logout</button>
   </div>
   <div class="container">
-    <h2>Available Jobs</h2>
+    <h2>
+      <a href="job-details.html"></a>Available Jobs</h2>
+
     <ul id="jobList"></ul>
     <button class="btn" onclick="window.location='post-job.html'">Post a Job (Employers)</button>
     <p id="msg"></p>

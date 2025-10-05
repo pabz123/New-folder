@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Employer Dashboard | UniConnect</title>
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body>
+  <header class="header">
+    <div class="header-container">
+      <a href="/" class="logo">UniConnect</a>
+      <nav class="nav-links">
+        <a href="/post-job.html" class="btn btn-primary">Post New Job</a>
+        <a href="/employer-profile.html">Company Profile</a>
+        <button class="btn btn-outline" onclick="auth.logout()">Logout</button>
+      </nav>
+    </div>
+  </header>
+
+  <div class="dashboard-container">
+    <aside class="dashboard-sidebar">
+      <nav class="sidebar-nav">
+        <a href="#" class="sidebar-link active" data-tab="posted-jobs">
+          <i class="icon-briefcase"></i>
+          Posted Jobs
+        </a>
+        <a href="#" class="sidebar-link" data-tab="applications">
+          <i class="icon-users"></i>
+          Applications
+        </a>
+        <a href="#" class="sidebar-link" data-tab="analytics">
+          <i class="icon-chart"></i>
+          Analytics
+        </a>
+      </nav>
+    </aside>
+
+    <main class="dashboard-main">
+      <!-- Posted Jobs Tab -->
+      <div class="dashboard-tab active" id="posted-jobs">
+        <div class="dashboard-header">
+          <h1>Posted Jobs</h1>
+          <a href="/post-job.html" class="btn btn-primary">Post New Job</a>
+        </div>
+
+        <div class="jobs-grid" id="jobsList">
+          <!-- Jobs will be loaded here -->
+        </div>
+      </div>
+
+      <!-- Applications Tab -->
+      <div class="dashboard-tab" id="applications">
+        <div class="dashboard-header">
+          <h1>Applications</h1>
+          <div class="filter-group">
+            <select class="input" id="jobFilter">
+              <option value="">All Jobs</option>
+            </select>
+            <select class="input" id="statusFilter">
+              <option value="">All Statuses</option>
+              <option value="pending">Pending</option>
+              <option value="reviewed">Reviewed</option>
+              <option value="interviewed">Interviewed</option>
+              <option value="accepted">Accepted</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="applications-list" id="applicationsList">
+          <!-- Applications will be loaded here -->
+        </div>
+      </div>
+
+      <!-- Analytics Tab -->
+      <div class="dashboard-tab" id="analytics">
+        <div class="dashboard-header">
+          <h1>Analytics</h1>
+        </div>
+
+        <div class="analytics-grid">
+          <div class="analytics-card">
+            <h3>Total Jobs Posted</h3>
+            <div class="analytics-number" id="totalJobs">0</div>
+          </div>
+          <div class="analytics-card">
+            <h3>Total Applications</h3>
+            <div class="analytics-number" id="totalApplications">0</div>
+          </div>
+          <div class="analytics-card">
+            <h3>Active Jobs</h3>
+            <div class="analytics-number" id="activeJobs">0</div>
+          </div>
+        </div>
+
+        <div class="analytics-charts">
+          <div class="chart-container">
+            <canvas id="applicationsChart"></canvas>
+          </div>
+          <div class="chart-container">
+            <canvas id="jobsChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { auth } from '../js/auth.js';
+    import { api } from '../js/api.js';
+    import { Chart } from 'chart.js';
+
+    class EmployerDashboard {
+      constructor() {
+        this.initializeTabs();
+        this.loadData();
+        this.setupEventListeners();
+      }
+
+      initializeTabs() {
+        const tabs = document.querySelectorAll('.sidebar-link');
+        tabs.forEach(tab => {
+          tab.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.switchTab(tab.dataset.tab);
+          });
+        });
+      }
+
+      switchTab(tabId) {
+        // Hide all tabs
+        document.querySelectorAll('.dashboard-tab').forEach(tab => {
+          tab.classList.remove('active');
+        });
+        
+        // Show selected tab
+        document.getElementById(tabId).classList.add('active');
+        
+        // Update sidebar active state
+        document.querySelectorAll('.sidebar-link').forEach(link => {
+          link.classList.remove('active');
+        });
+        document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+      }
+
+      async loadData() {
+        try {
+          await Promise.all([
+            this.loadJobs(),
+            this.loadApplications(),
+            this.loadAnalytics()
+          ]);
+        } catch (error) {
+          console.error('Error loading dashboard data:', error);
+          this.showError('Failed to load dashboard data');
+        }
+      }
+
+      async loadJobs() {
+        const jobs = await api.getEmployerJobs();
+        this.renderJobs(jobs);
+      }
+
+      renderJobs(jobs) {
+        const container = document.getElementById('jobsList');
+        container.innerHTML = jobs.map(job => `
+          <div class="job-card">
+            <div class="job-header">
+              <h3>${job.title}</h3>
+              <div class="job-actions">
+                <button class="btn btn-outline btn-sm" onclick="editJob(${job.id})">Edit</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteJob(${job.id})">Delete</button>
+              </div>
+            </div>
+            <div class="job-stats">
+              <span>${job.applications_count} applications</span>
+              <span>${job.views_count} views</span>
+            </div>
+            <div class="job-footer">
+              <span class="status ${job.status}">${job.status}</span>
+              <span class="posted-date">Posted ${this.formatDate(job.created_at)}</span>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      async loadApplications() {
+        const applications = await api.getJobApplications();
+        this.renderApplications(applications);
+      }
+
+      renderApplications(applications) {
+        const container = document.getElementById('applicationsList');
+        container.innerHTML = applications.map(app => `
+          <div class="application-card">
+            <div class="applicant-info">
+              <h3>${app.user.name}</h3>
+              <span class="email">${app.user.email}</span>
+            </div>
+            <div class="application-details">
+              <span class="job-title">${app.job.title}</span>
+              <span class="application-date">${this.formatDate(app.created_at)}</span>
+            </div>
+            <div class="application-actions">
+              <select class="input status-select" onchange="updateStatus(${app.id}, this.value)">
+                <option value="pending" ${app.status === 'pending' ? 'selected' : ''}>Pending</option>
+                <option value="reviewed" ${app.status === 'reviewed' ? 'selected' : ''}>Reviewed</option>
+                <option value="interviewed" ${app.status === 'interviewed' ? 'selected' : ''}>Interviewed</option>
+                <option value="accepted" ${app.status === 'accepted' ? 'selected' : ''}>Accepted</option>
+                <option value="rejected" ${app.status === 'rejected' ? 'selected' : ''}>Rejected</option>
+              </select>
+              <a href="${app.resume_url}" class="btn btn-outline btn-sm" target="_blank">View Resume</a>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      async loadAnalytics() {
+        const analytics = await api.getEmployerAnalytics();
+        this.renderAnalytics(analytics);
+      }
+
+      renderAnalytics(analytics) {
+        // Update numbers
+        document.getElementById('totalJobs').textContent = analytics.total_jobs;
+        document.getElementById('totalApplications').textContent = analytics.total_applications;
+        document.getElementById('activeJobs').textContent = analytics.active_jobs;
+
+        // Create charts
+        this.createApplicationsChart(analytics.applications_data);
+        this.createJobsChart(analytics.jobs_data);
+      }
+
+      createApplicationsChart(data) {
+        const ctx = document.getElementById('applicationsChart').getContext('2d');
+        new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: data.labels,
+            datasets: [{
+              label: 'Applications',
+              data: data.values,
+              borderColor: '#4F46E5',
+              tension: 0.4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false
+          }
+        });
+      }
+
+      createJobsChart(data) {
+        const ctx = document.getElementById('jobsChart').getContext('2d');
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: data.labels,
+            datasets: [{
+              label: 'Jobs Posted',
+              data: data.values,
+              backgroundColor: '#10B981'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false
+          }
+        });
+      }
+
+      setupEventListeners() {
+        // Job actions
+        window.editJob = (jobId) => {
+          window.location.href = `/edit-job.html?id=${jobId}`;
+        };
+
+        window.deleteJob = async (jobId) => {
+          if (confirm('Are you sure you want to delete this job?')) {
+            try {
+              await api.deleteJob(jobId);
+              this.loadJobs();
+              this.showSuccess('Job deleted successfully');
+            } catch (error) {
+              this.showError('Failed to delete job');
+            }
+          }
+        };
+
+        // Application status update
+        window.updateStatus = async (applicationId, status) => {
+          try {
+            await api.updateApplicationStatus(applicationId, status);
+            this.showSuccess('Status updated successfully');
+          } catch (error) {
+            this.showError('Failed to update status');
+          }
+        };
+
+        // Filters
+        document.getElementById('jobFilter').addEventListener('change', () => {
+          this.filterApplications();
+        });
+
+        document.getElementById('statusFilter').addEventListener('change', () => {
+          this.filterApplications();
+        });
+      }
+
+      filterApplications() {
+        const jobId = document.getElementById('jobFilter').value;
+        const status = document.getElementById('statusFilter').value;
+        this.loadApplications({ jobId, status });
+      }
+
+      formatDate(date) {
+        return new Date(date).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric'
+        });
+      }
+
+      showSuccess(message) {
+        // Implement success notification
+        alert(message);
+      }
+
+      showError(message) {
+        // Implement error notification
+        alert(message);
+      }
+    }
+
+    // Initialize dashboard
+    new EmployerDashboard();
+  </script>
+</body>
+</html>
