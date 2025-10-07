@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Register - UniConnect</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/layout.css">
+    <link rel="stylesheet" href="/css/form.css">
+</head>
+<body class="auth-page">
+    <nav class="navbar">
+        <div class="nav-brand">UniConnect</div>
+        <div class="nav-links">
+            <a href="/index.html">Home</a>
+            <a href="/about.html">About</a>
+            <a href="/contact.html">Contact</a>
+            <a href="/login.html">Login</a>
+            <a href="/register.html" class="active">Register</a>
+        </div>
+    </nav>
+
+    <main class="auth-container">
+        <div class="auth-box">
+            <h1>Create Account</h1>
+            <p class="auth-subtitle">Join UniConnect today</p>
+            
+            <form id="registerForm" class="auth-form">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label for="role">I am a:</label>
+                    <select id="role" required>
+                        <option value="">Select role</option>
+                        <option value="student">Student</option>
+                        <option value="employer">Employer</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Register</button>
+                <p id="msg" class="message"></p>
+            </form>
+            
+            <p class="auth-footer">
+                Already have an account? <a href="/login.html">Login here</a>
+            </p>
+        </div>
+    </main>
+
+    <script type="module">
+        const API_URL = 'http://localhost:5000';
+        
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const msgEl = document.getElementById('msg');
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            
+            try {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Creating account...';
+                msgEl.textContent = '';
+                
+                const response = await fetch(`${API_URL}/auth/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: document.getElementById('email').value,
+                        password: document.getElementById('password').value,
+                        role: document.getElementById('role').value
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Registration failed');
+                }
+
+                msgEl.className = 'message success';
+                msgEl.textContent = '✅ Registration successful! Redirecting to login...';
+                
+                // Redirect to login page
+                setTimeout(() => {
+                    window.location.href = '/login.html';
+                }, 1500);
+                
+            } catch (err) {
+                msgEl.className = 'message error';
+                msgEl.textContent = '❌ ' + (err.message || 'Something went wrong');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Register';
+            }
+        });
+    </script>
+</body>
+</html>
